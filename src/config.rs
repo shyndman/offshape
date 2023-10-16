@@ -3,7 +3,7 @@ use clap::Args;
 use serde::Deserialize;
 use url::Url;
 
-use crate::onshape::models::TranslationFormat;
+use crate::onshape::models::ExportFileFormat;
 
 #[derive(Args, Clone, Debug)]
 pub struct GlobalOptions {
@@ -23,28 +23,28 @@ pub struct SyncConfig {
     pub part_studios: Vec<SyncedPartStudio>,
 }
 impl SyncConfig {
-    pub fn export_formats(&self) -> Vec<&TranslationFormat> {
-        TranslationFormat::iter()
+    pub fn export_formats(&self) -> Vec<&ExportFileFormat> {
+        ExportFileFormat::iter()
             .filter(|f| match **f {
-                TranslationFormat::ThreeMF => self.three_mf_path.as_deref().is_some(),
-                TranslationFormat::Step => self.step_path.as_deref().is_some(),
-                TranslationFormat::Stl => self.stl_path.as_deref().is_some(),
+                ExportFileFormat::ThreeMF => self.three_mf_path.as_deref().is_some(),
+                ExportFileFormat::Step => self.step_path.as_deref().is_some(),
+                ExportFileFormat::Stl => self.stl_path.as_deref().is_some(),
             })
             .collect()
     }
 
-    pub fn format_path(&self, format: &TranslationFormat) -> Option<Box<Utf8Path>> {
+    pub fn format_path(&self, format: &ExportFileFormat) -> Option<Box<Utf8Path>> {
         match format {
-            TranslationFormat::ThreeMF => self.three_mf_path.clone(),
-            TranslationFormat::Step => self.step_path.clone(),
-            TranslationFormat::Stl => self.stl_path.clone(),
+            ExportFileFormat::ThreeMF => self.three_mf_path.clone(),
+            ExportFileFormat::Step => self.step_path.clone(),
+            ExportFileFormat::Stl => self.stl_path.clone(),
         }
     }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ExportFormat {
-    pub format: TranslationFormat,
+    pub format: ExportFileFormat,
     pub path: Box<Utf8Path>,
 }
 

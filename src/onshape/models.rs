@@ -42,7 +42,7 @@ pub struct Part {
 #[derive(Clone, Debug, Serialize)]
 pub struct TranslationRequest {
     #[serde(rename = "formatName")]
-    pub format: TranslationFormat,
+    pub format: ExportFileFormat,
     #[serde(rename = "partIds")]
     pub part_ids: String,
     #[serde(rename = "destinationName")]
@@ -57,6 +57,9 @@ pub struct TranslationRequest {
     pub resolution: TranslationResolution,
     #[serde(rename = "maximumChordLength")]
     pub maximum_chord_length: f32,
+    #[serde(rename = "specifyUnits")]
+    pub specify_units: bool,
+    pub units: TranslationUnit,
 
     #[serde(rename = "imageWidth")]
     pub image_width: u32,
@@ -65,7 +68,22 @@ pub struct TranslationRequest {
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum TranslationFormat {
+pub enum TranslationUnit {
+    #[serde(rename = "millimeter")]
+    Millimeters,
+    #[serde(rename = "centimeter")]
+    Centimeters,
+    #[serde(rename = "meter")]
+    Meters,
+    #[serde(rename = "inch")]
+    Inches,
+    #[serde(rename = "foot")]
+    Feet,
+    #[serde(rename = "yard")]
+    Yards,
+}
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub enum ExportFileFormat {
     #[serde(rename = "3MF")]
     ThreeMF,
     #[serde(rename = "STEP")]
@@ -73,24 +91,38 @@ pub enum TranslationFormat {
     #[serde(rename = "STL")]
     Stl,
 }
-impl TranslationFormat {
-    pub fn iter() -> Iter<'static, TranslationFormat> {
-        static FORMATS: [TranslationFormat; 3] = [
-            TranslationFormat::ThreeMF,
-            TranslationFormat::Step,
-            TranslationFormat::Stl,
+impl ExportFileFormat {
+    pub fn iter() -> Iter<'static, ExportFileFormat> {
+        static FORMATS: [ExportFileFormat; 3] = [
+            ExportFileFormat::ThreeMF,
+            ExportFileFormat::Step,
+            ExportFileFormat::Stl,
         ];
         FORMATS.iter()
     }
 
     pub fn extension(&self) -> String {
         match self {
-            TranslationFormat::ThreeMF => "3mf",
-            TranslationFormat::Step => "step",
-            TranslationFormat::Stl => "stl",
+            ExportFileFormat::ThreeMF => "3mf",
+            ExportFileFormat::Step => "step",
+            ExportFileFormat::Stl => "stl",
         }
         .into()
     }
+
+    pub fn export_action(&self) -> ExportAction {
+        match self {
+            ExportFileFormat::ThreeMF => ExportAction::Translate,
+            ExportFileFormat::Step => ExportAction::Translate,
+            ExportFileFormat::Stl => ExportAction::Direct,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ExportAction {
+    Translate,
+    Direct,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -115,7 +147,7 @@ pub enum TranslationResolution {
 pub struct TranslationJobWithOutput {
     pub job: TranslationJob,
     pub output_filename: Utf8PathBuf,
-    pub format: TranslationFormat,
+    pub format: ExportFileFormat,
 }
 impl Deref for TranslationJobWithOutput {
     type Target = TranslationJob;

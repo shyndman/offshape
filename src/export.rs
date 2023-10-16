@@ -13,7 +13,9 @@ use crate::{
     config::{SyncConfig, SyncedDocument},
     onshape::{
         environment_client,
-        models::{Part, TranslationJobWithOutput, TranslationState},
+        models::{
+            ExportAction, ExportFileFormat, Part, TranslationJobWithOutput, TranslationState,
+        },
     },
     GlobalOptions,
 };
@@ -99,7 +101,11 @@ pub fn export(
     for part_studio in part_studios.iter() {
         let to_sync = to_export_by_studio.get(&part_studio.id).unwrap();
         for (part_id, basename) in to_sync {
-            for f in formats.iter() {
+            // Begin translations for the formats that require them
+            for f in formats
+                .iter()
+                .filter(|f| f.export_action() == ExportAction::Translate)
+            {
                 eprintln!("Exporting {}.{}", basename, f.extension());
                 active_jobs.push(client.begin_translation(
                     &f,
@@ -109,6 +115,30 @@ pub fn export(
                     &part_id,
                     &basename,
                 )?);
+            }
+
+            for f in formats
+                .iter()
+                .copied()
+                .filter(|f| f.export_action() == ExportAction::Direct)
+            {
+                eprintln!("Exporting {}.{}", basename, f.extension());
+                if *f == ExportFileFormat::Stl {
+                    let stl_contents = client.get_part_stl(
+                        &document_id,
+                        &workspace_id,
+                        &part_studio.id,
+                        &part_id,
+                    )?;
+
+                    // TODO(shyndman): Figure out how to merge the STL file writes with
+                    // the 3mf and step files
+                    let mut output_path: Utf8PathBuf = config.format_path(f).unwrap().into();
+                    output_path.push(format!("{basename}.{ext}", ext = f.extension()));
+
+                    let mut f = File::create(output_path)?;
+                    f.write(stl_contents.as_bytes())?;
+                }
             }
         }
     }

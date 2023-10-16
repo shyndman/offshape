@@ -22,8 +22,8 @@ use reqwest::{
 use sha2::Sha256;
 
 use super::models::{
-    DocumentElement, Part, TranslationFormat, TranslationJobWithOutput, TranslationRequest,
-    TranslationState,
+    DocumentElement, ExportFileFormat, Part, TranslationJobWithOutput, TranslationRequest,
+    TranslationState, TranslationUnit,
 };
 use crate::onshape::models::{TranslationJob, TranslationResolution};
 
@@ -120,16 +120,15 @@ impl OnShapeClient {
     pub fn get_part_stl(
         &self,
         document_id: &String,
-        microversion_id: &String,
+        workspace_id: &String,
         element_id: &String,
         part_id: &String,
-        configuration: &String,
     ) -> Result<String> {
         let mut url = Url::from_str(&format!(
-            "{}/parts/d/{document_id}/m/{microversion_id}/e/{element_id}/partid/{part_id}/stl?",
+            "{}/parts/d/{document_id}/w/{microversion_id}/e/{element_id}/partid/{part_id}/stl?",
             BASE_URL,
             document_id = document_id,
-            microversion_id = microversion_id,
+            microversion_id = workspace_id,
             element_id = element_id,
             part_id = part_id,
         ))?;
@@ -140,7 +139,7 @@ impl OnShapeClient {
             query.append_pair("angleTolerance", "0.04363323129985824");
             query.append_pair("chordTolerance", "0.06");
             query.append_pair("minFacetWidth", "0.025");
-            query.append_pair("configuration", configuration);
+            query.append_pair("configuration", "");
         }
 
         let res = self.request(Method::GET, url).send()?;
@@ -199,7 +198,7 @@ impl OnShapeClient {
 
     pub fn begin_translation(
         &self,
-        format: &TranslationFormat,
+        format: &ExportFileFormat,
         document_id: &String,
         workspace_id: &String,
         element_id: &String,
@@ -225,6 +224,8 @@ impl OnShapeClient {
             distance_tolerance: 0.00006,
             angular_tolerance: 0.04363323129985824,
             maximum_chord_length: 10.,
+            specify_units: true,
+            units: TranslationUnit::Millimeters,
 
             image_width: 96,
             image_height: 96,
