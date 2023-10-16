@@ -1,4 +1,4 @@
 .env
-
-/scratch
-/target
+scratch
+target
+example/export/

@@ -1,0 +1,23 @@
+3mf_path = "export/3mf/"
+step_path = "export/step/"
+stl_path = "export/stl/"
+
+[document]
+id = "6a1de9567f16cd7d1f564dbb"
+workspace_id = "da2053ce82593768f41daab4"
+
+[[part_studio]]
+display_name = "Printables"
+id = "59628be740b2cf41a42e4c8a"
+synced_parts = [
+  # Printhead base
+  { id = "RUCD", basename = "printhead_base" },
+  # # Extruder mount
+  { id = "RsED", basename = "extruder_mount" },
+  # # Left blower duct
+  { id = "R3ED", basename = "left_blower_duct" },
+  # # Right blower duct
+  { id = "RCFD", basename = "right_blower_duct" },
+  # # Heat sink 40mm fan duct
+  { id = "RQFD", basename = "heat_sink_40_mm_fan_duct" },
+]
