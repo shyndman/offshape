@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::RandomState, HashMap},
+    collections::HashMap,
     fs::{create_dir_all, File},
     io::Write,
 };
@@ -7,6 +7,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use camino::Utf8PathBuf;
 use clap::Args;
+use convert_case::{Case, Casing};
 use itertools::Itertools;
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
     onshape::{
         environment_client,
         models::{
-            ExportAction, ExportFileFormat, Part, TranslationJobWithOutput, TranslationState,
+            ExportAction, ExportFileFormat, TranslationJobWithOutput, TranslationState,
         },
     },
     GlobalOptions,
@@ -68,21 +69,15 @@ pub fn export(
             ));
         }
 
-        let parts =
-            client.get_studio_parts(&document_id, &workspace_id, &synced_studio.id)?;
-        let parts_by_id = HashMap::<String, Part, RandomState>::from_iter(
-            parts.iter().map(|p| (p.part_id.clone(), p.clone())),
-        );
-
-        let mut to_export = vec![];
-        for p in synced_studio.synced_parts.iter() {
-            if !parts_by_id.contains_key(&p.id) {
-                return Err(anyhow!("Part not found, part_id={}", p.id));
-            }
-            let part = parts_by_id.get(&p.id).unwrap();
-            to_export.push((part.part_id.clone(), p.basename.clone()));
-        }
-        to_export_by_studio.insert(&synced_studio.id, to_export);
+        let studio_parts: Vec<(String, String)> = client
+            .get_studio_parts(&document_id, &workspace_id, &synced_studio.id)?
+            .iter()
+            .map(|p| {
+                let basename = p.name.to_case(Case::Snake);
+                (p.part_id.clone(), basename)
+            })
+            .collect();
+        to_export_by_studio.insert(&synced_studio.id, studio_parts);
     }
 
     // Create/clean output directories

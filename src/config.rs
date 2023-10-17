@@ -58,11 +58,4 @@ pub struct SyncedDocument {
 pub struct SyncedPartStudio {
     pub display_name: String,
     pub id: String,
-    pub synced_parts: Vec<SyncedPart>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct SyncedPart {
-    pub id: String,
-    pub basename: String,
 }
