@@ -22,16 +22,16 @@ use crate::{
 };
 
 #[derive(Args, Debug)]
-pub struct ExportOptions {
+pub struct PullOptions {
     #[arg(long)]
     pub no_clean_paths: bool,
 }
-impl ExportOptions {
+impl PullOptions {
     fn should_clean_paths(&self) -> bool {
         !self.no_clean_paths
     }
 }
-impl Default for ExportOptions {
+impl Default for PullOptions {
     fn default() -> Self {
         Self {
             no_clean_paths: false,
@@ -42,9 +42,9 @@ impl Default for ExportOptions {
 pub fn export(
     config: SyncConfig,
     global_options: GlobalOptions,
-    options: ExportOptions,
+    options: PullOptions,
 ) -> Result<()> {
-    // Load the manifest describing what to sync
+    // Load the manifest describing what to pull
     let SyncConfig {
         document:
             SyncedDocument {

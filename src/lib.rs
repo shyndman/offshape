@@ -1,9 +1,9 @@
 #![feature(let_chains)]
 
 mod config;
-mod export;
 #[allow(dead_code)]
 mod onshape;
+mod pull;
 mod show;
 
 use std::fs;
@@ -14,7 +14,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use crate::config::SyncConfig;
 pub use crate::{
     config::GlobalOptions,
-    export::{export, ExportOptions},
+    pull::{export, PullOptions},
     show::{show_parts, OutputFormat, ShowPartsOptions},
 };
 

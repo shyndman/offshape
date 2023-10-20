@@ -4,7 +4,7 @@ use anyhow::Result;
 use camino::*;
 use clap::{Parser, Subcommand};
 use offshape::{
-    export, load_config, show_parts, ExportOptions, GlobalOptions, ShowPartsOptions,
+    export, load_config, show_parts, GlobalOptions, PullOptions, ShowPartsOptions,
 };
 
 #[derive(Parser, Debug)]
@@ -24,9 +24,9 @@ struct Cli {
 enum Commands {
     /// Displays all OnShape parts found in the offshape.toml's [[part_studio]] tabs
     ShowParts(ShowPartsOptions),
-    /// Pulls the latest CAD files (3mf, Parasolid) from OnShape, and write them to the
-    /// paths found in offshape.toml
-    Export(ExportOptions),
+    /// Pulls the latest CAD files (3mf, STL, STEP, etc) from OnShape, and write them to
+    /// the paths found in offshape.toml
+    Pull(PullOptions),
 }
 
 fn main() -> Result<()> {
@@ -40,6 +40,6 @@ fn main() -> Result<()> {
     let config = load_config(&config_path)?;
     match cli.command {
         Commands::ShowParts(options) => show_parts(config, cli.global_options, options),
-        Commands::Export(options) => export(config, cli.global_options, options),
+        Commands::Pull(options) => export(config, cli.global_options, options),
     }
 }
