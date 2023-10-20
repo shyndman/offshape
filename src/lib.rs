@@ -1,4 +1,5 @@
 #![feature(let_chains)]
+#![feature(file_set_times)]
 
 mod config;
 #[allow(dead_code)]

@@ -252,7 +252,11 @@ impl OnShapeClient {
         })
     }
 
-    pub fn download_translated_file(&self, job: &TranslationJobWithOutput) -> Result<Bytes> {
+    pub fn download_translated_file(
+        &self,
+        job: &TranslationJobWithOutput,
+        strip_indeterminism: bool,
+    ) -> Result<Bytes> {
         let url = match (job.request_state, job.result_external_data_ids.as_deref()) {
             (TranslationState::Done, Some([external_id, ..])) => Url::from_str(&format!(
                 "{}/documents/d/{document_id}/externaldata/{external_id}",
@@ -269,7 +273,20 @@ impl OnShapeClient {
 
         eprintln!("Downloading file, {}", job.output_filename);
         let res = self.request(Method::GET, url).send()?;
-        Ok(res.bytes()?)
+        if job.format == ExportFileFormat::Step && strip_indeterminism {
+            println!("Stripping indeterminism from .step file");
+            lazy_static! {
+                // DATE=2023-06-22T10:00:01 (UTC);
+                static ref INDETERMINISTIC_FIELDS_PATTERN: Regex =
+                    Regex::new(r"/\* name \*/.*,\s+/\* time_stamp \*/.*,\s+").unwrap();
+            }
+
+            let file_text = res.text()?;
+            let corrected_text = INDETERMINISTIC_FIELDS_PATTERN.replace(&file_text, "");
+            Ok(Bytes::copy_from_slice(corrected_text.as_bytes()))
+        } else {
+            Ok(res.bytes()?)
+        }
     }
 
     pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
@@ -342,4 +359,27 @@ fn create_nonce() -> String {
         .take(25)
         .map(char::from)
         .collect()
+}
+
+#[cfg(test)]
+mod test {
+    use indoc::indoc;
+    use regex::Regex;
+
+    #[test]
+    fn test_strip_step_determinism() {
+        let step = indoc! {r"
+            FILE_NAME(
+                /* name */ '652d6611f9d46e23115610bb',
+                /* time_stamp */ '2023-10-16T16:34:26Z',
+                /* author */ (''),
+                /* organization */ (''),
+                /* preprocessor_version */ 'ST-DEVELOPER v19.4',
+                /* originating_system */ '  ',
+                /* authorisation */ '  ');
+        "};
+        let pattern = Regex::new(r"/\* name \*/.*,\s+/\* time_stamp \*/.*,\s+").unwrap();
+
+        println!("{}", pattern.replace_all(step, ""));
+    }
 }

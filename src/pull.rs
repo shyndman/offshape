@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::{create_dir_all, File},
     io::Write,
+    time::SystemTime,
 };
 
 use anyhow::{anyhow, Result};
@@ -25,6 +26,10 @@ use crate::{
 pub struct PullOptions {
     #[arg(long)]
     pub no_clean_paths: bool,
+    /// If `true` (the default), files will be stripped of timestamps relating to their
+    /// export time, or the time they were written to disk.
+    #[arg(long, default_value_t = true)]
+    pub strip_indeterminism: bool,
 }
 impl PullOptions {
     fn should_clean_paths(&self) -> bool {
@@ -35,6 +40,7 @@ impl Default for PullOptions {
     fn default() -> Self {
         Self {
             no_clean_paths: false,
+            strip_indeterminism: true,
         }
     }
 }
@@ -130,9 +136,11 @@ pub fn export(
                     // the 3mf and step files
                     let mut output_path: Utf8PathBuf = config.format_path(f).unwrap().into();
                     output_path.push(format!("{basename}.{ext}", ext = f.extension()));
-
-                    let mut f = File::create(output_path)?;
-                    f.write(stl_contents.as_bytes())?;
+                    write_output_file(
+                        output_path,
+                        stl_contents.as_bytes(),
+                        options.strip_indeterminism,
+                    )?;
                 }
             }
         }
@@ -153,14 +161,14 @@ pub fn export(
                 }
                 TranslationState::Done => {
                     for j in jobs {
-                        let bytes = client.download_translated_file(&j)?;
+                        let bytes = client
+                            .download_translated_file(&j, options.strip_indeterminism)?;
 
                         let mut output_path: Utf8PathBuf =
                             config.format_path(&j.format).unwrap().into();
                         output_path.push(j.output_filename.clone());
                         eprintln!("Writing translation to {}", j.output_filename);
-                        let mut output_file = File::create(output_path)?;
-                        output_file.write_all(&bytes)?;
+                        write_output_file(output_path, &bytes, options.strip_indeterminism)?;
                     }
                 }
                 TranslationState::Failed => {
@@ -177,6 +185,20 @@ pub fn export(
         active_jobs = next;
     }
 
+    Ok(())
+}
+
+fn write_output_file(
+    output_path: Utf8PathBuf,
+    bytes: &[u8],
+    strip_timestamps: bool,
+) -> anyhow::Result<()> {
+    let mut f = File::create(output_path)?;
+    f.write(bytes)?;
+    if strip_timestamps {
+        f.set_modified(SystemTime::UNIX_EPOCH)?;
+    }
+    f.flush()?;
     Ok(())
 }
 
